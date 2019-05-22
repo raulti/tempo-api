@@ -38,24 +38,31 @@ class ParserLogController extends Controller
         
         
         
-        
-        
-        
-        $listaJogosDetalhes = [];
         //Identifica total de Kills em um jogo
+        $listaJogosDetalhes = [];
         foreach ($jogos as $key => $jogoData){
            
             $jogo = [];
             $jogo['jogo'] = 'game_' . ($key + 1);
             
             $coutTotalKills = 0;
+            $nomesKilleds = [];
             foreach ($jogoData as $linhaJogo) {
-                if (strpos($linhaJogo, 'Kill') !== false) {
+                if (strpos($linhaJogo, 'killed') !== false) {
                     $coutTotalKills ++;
+                    
+                    //Recupera nome de jogadores Killeds
+                    if (preg_match('/killed (.*?) by/', $linhaJogo, $match) == 1) {
+                        $nomesKilleds[] = $match[1];
+                    }
+                    
                 };
             }
             
+             
+            
             $jogo['totalKills'] = $coutTotalKills;
+            $jogo['kills'] = array_count_values(array_map('strtolower', $nomesKilleds));
             $listaJogosDetalhes[] = $jogo;
         }
         
