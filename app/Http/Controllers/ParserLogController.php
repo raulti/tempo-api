@@ -2,39 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\BO\PessoaBO;
+use App\BO\ParserLogBO;
+use App\Models\Jogo;
 use Illuminate\Http\Request;
+use Storage;
 
+/**
+ * Classe responsável por controlar as funcionalidades do parse do arquivo
+ * @author raul
+ */
 class ParserLogController extends Controller
 {
-
-    protected $pessoaBO;
-
-    public function __construct(PessoaBO $pessoaBO)
+    
+    protected $parserLogBO;
+    
+    public function __construct(ParserLogBO $parserLogBO)
     {
-        $this->pessoaBO = $pessoaBO;
+        $this->parserLogBO = $parserLogBO;
     }
-
-    public function salvar(Request $request)
+    
+    /**
+     * Metodo responsável por retornar os dados do parse
+     * @param Request $request
+     */
+    public function parse(Request $request)
     {
-        $pessoa = (object)$request->all();
+        //Divide jogos em Arrays
+        $path = $request->file('file0')->store('upload');
+        $file = explode("InitGame", Storage::get($path));
+        $jogos = [];
+        foreach ( $file as $content ) {
+            $jogos[] = array_filter(array_map("trim", explode("\n", $content)));
+        }
         
-        $pessoa->st_ativo = true;
-        $this->pessoaBO->salvar($pessoa);
-    }
-    
-    public function getPessoaPorId($id)
-    {
-        $pessoa = $this->pessoaBO->getPessoaPorId($id);
-        return view('pessoa', compact('pessoa'));
-    }
-
-    public function excluir(Request $request, $id)
-    {
-        $this->pessoaBO->excluir($id);
-    }
-    
-    public function list() {
-        return $this->pessoaBO->list();
+        
+        
+        
+        
+        
+        
+        $listaJogosDetalhes = [];
+        //Identifica total de Kills em um jogo
+        foreach ($jogos as $key => $jogoData){
+           
+            $jogo = [];
+            $jogo['jogo'] = 'game_' . ($key + 1);
+            
+            $coutTotalKills = 0;
+            foreach ($jogoData as $linhaJogo) {
+                if (strpos($linhaJogo, 'Kill') !== false) {
+                    $coutTotalKills ++;
+                };
+            }
+            
+            $jogo['totalKills'] = $coutTotalKills;
+            $listaJogosDetalhes[] = $jogo;
+        }
+        
+        
+        return $listaJogosDetalhes;
+        //$this->parserLogBO->parse($request->file('file0'));
     }
 }

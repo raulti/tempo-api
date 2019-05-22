@@ -5,7 +5,7 @@ $router->get('/', function () use ($router) {
 });
 
 //Rotas para o parse
-$router->post('upload',['uses' => 'ParserLogController@upload']);
+$router->post('parse','ParserLogController@parse');
 
 
 

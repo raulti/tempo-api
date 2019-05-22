@@ -2,36 +2,27 @@
 
 namespace App\BO;
 
-use App\Repositories\PessoaRepository;
+use File;
 
 /**
- * Resonsável por implementar as regras de negócio de 'Pessoa'
+ * Resonsável por implementar as regras de negócio de 'Parse do Log'
  */
 class ParserLogBO
 {
-    protected $pessoaRepository;
-
-    public function __construct(PessoaRepository $pessoaRepository)
+   
+    public function parse($file)
     {
-        $this->pessoaRepository = $pessoaRepository;
-    }
-
-    public function salvar($pessoa)
-    {
-       return $this->pessoaRepository->salvar($pessoa);
-    }
-
-    public function getPessoaPorId($id)
-    {
-        return $this->pessoaRepository->getPessoaPorId($id);
-    }
-
-    public function excluir($id)
-    {
-        return $this->pessoaRepository->excluir($id);
-    }
-    
-    public function list() {
-        return $this->pessoaRepository->getPessoasAtivas();
+        
+        $filename = storage_path($file);
+        $content = File::get($filename);
+        foreach($content as $line) {
+            echo $line;
+        }
+        
+        echo "<pre>";
+        print_r($file);die;
+        echo "</pre>";
+        
+       
     }
 }
