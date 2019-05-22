@@ -1,0 +1,6 @@
+/vendor
+/.idea
+/.settings
+Homestead.json
+Homestead.yaml
+composer.lock
