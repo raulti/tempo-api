@@ -10,20 +10,44 @@ use Storage;
  */
 class ParserLogBO
 {
-   
-    public function parse($file)
+    /**
+     * Retorna os detalhes dos jogos
+     */
+    public function getListaJogosDetalhes($file)
     {
-        $file = $this->saveAndGetLocalFile($file);
-        $content = explode("InitGame", $file);
-        //Divide jogos em Arrays
-        $jogos = [];
-        foreach ( $file as $content ) {
-            $jogos[] = array_filter(array_map("trim", explode("\n", $content)));
+        $log = $this->saveAndGetLocalFile($file);
+        $arrayJogos = $this->getArrayJogos($log);
+        return $this->getDetalhesJogos($arrayJogos);
+    }
+    
+    /**
+     * Salva arquivo de logo em uma pasta e retorna o mesmo
+     */
+    public function saveAndGetLocalFile($file){
+         $path = $file->store('upload');
+         return Storage::get($path);
+    }
+    
+    /**
+     * Separa os jogos.
+     */
+    public function getArrayJogos($log) {
+        $jogosExplode = explode("InitGame", $log);       
+        $arrayJogos = [];
+        foreach ( $jogosExplode as $jogoExplode ) {
+            $arrayJogos[] = array_filter(array_map("trim", explode("\n", $jogoExplode)));
         }
         
-        //Identifica total de Kills em um jogo
+        return $arrayJogos;
+    }
+    
+    /**
+     * Retorna os dados dos jogos
+     */
+    public function getDetalhesJogos($arrayJogos) {
+   
         $listaJogosDetalhes = [];
-        foreach ($jogos as $key => $jogoData){
+        foreach ($arrayJogos as $key => $jogoData){
             
             $jogo = [];
             $jogo['jogo'] = 'game_' . ($key);
@@ -32,6 +56,8 @@ class ParserLogBO
             $nomesKills = [];
             $arrayNomesKilledsWorld = [];
             $arrayNomesPlayers = [];
+            
+            //Recupera quantidades de kills
             foreach ($jogoData as $linhaJogo) {
                 if (strpos($linhaJogo, 'killed') !== false) {
                     $coutTotalKills ++;
@@ -50,40 +76,48 @@ class ParserLogBO
                     }
                 }
                 
-                //Lista nomes de Players do jogo
-                if (strpos($linhaJogo, 'ClientUserinfoChanged') !== false) {
-                    $arrayLinhaJogo = explode("\\", $linhaJogo);
-                    $arrayNomesPlayers[] = $arrayLinhaJogo[1];
-                }
+                $arrayNomesPlayers[] = $this->getPlayerNome($linhaJogo);
             }
             
-            
-            
-            $nomesKills = array_count_values(array_map('strtolower', $nomesKills));
-            $uniqArrayNomesPlayers = array_unique($arrayNomesPlayers);
-            
-            //Remove 1 Kill do player que foi morto por um <world>
-            $UniqArrayNomesKilledsWorld = array_count_values(array_map('strtolower', $arrayNomesKilledsWorld));
-            foreach ($UniqArrayNomesKilledsWorld as $key => $nomeKilledsWorld){
-                
-                if(array_key_exists($key, $nomesKills)){
-                    $nomesKills[$key] = $nomesKills[$key] - $UniqArrayNomesKilledsWorld[$key];
-                } else {
-                    $nomesKills[$key] = 0 - $UniqArrayNomesKilledsWorld[$key];
-                }
-            }
-            
+            //Monta estrutura do detalhe do jogo
             $jogo['total_kills'] = $coutTotalKills;
-            $jogo['kills'] = $nomesKills;
-            $jogo['players'] = $uniqArrayNomesPlayers;
+            $jogo['kills'] = $this->removeKillWolrd($nomesKills, $arrayNomesKilledsWorld);
+            $jogo['players'] = array_unique($arrayNomesPlayers);
             $listaJogosDetalhes[] = $jogo;
         }
-       
         return $listaJogosDetalhes;
     }
     
-    public function saveAndGetLocalFile($file){
-         $path = $file->store('upload');
-         return Storage::get($path);
+    /**
+     * Lista nomes de Players do jogo
+     */
+    public function getPlayerNome($linhaJogo) {
+        if (strpos($linhaJogo, 'ClientUserinfoChanged') !== false) {
+            $arrayLinhaJogo = explode("\\", $linhaJogo);
+            return $arrayLinhaJogo[1];
+        }
+    }
+    
+    /**
+     * Remove 1 Kill do player que foi morto por um <world>
+     * Caso o jogador tenha matado outro jogado o código subtrai do array de Kills já existente
+     * Caso o jogado durante a partida não tenha matado nenhum outro player, ele é inserido no array de Kills com contagem negativa
+     */
+    public function removeKillWolrd($nomesKills, $arrayNomesKilledsWorld) {
+        
+        //Agrupa ocorrencias de jogadores
+        $uniqNomes = array_count_values(array_map('strtolower', $arrayNomesKilledsWorld));
+        $nomesKills = array_count_values(array_map('strtolower', $nomesKills));
+        
+        foreach ($uniqNomes as $key => $uniqNome){
+            
+            if(array_key_exists($key, $nomesKills)){
+                $nomesKills[$key] = $nomesKills[$key] - $uniqNomes[$key];
+            } else {
+                $nomesKills[$key] = 0 - $uniqNomes[$key];
+            }
+        }
+        
+        return $nomesKills;
     }
 }
