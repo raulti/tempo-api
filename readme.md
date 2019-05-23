@@ -1,5 +1,6 @@
 Api do teste
 Siga os passos abaixo para testar esta solução
+Esta Api fornece serviços para interpretação e devolução de dados dos jogos
 
 Requeriments{
     - PHP ^7.0
